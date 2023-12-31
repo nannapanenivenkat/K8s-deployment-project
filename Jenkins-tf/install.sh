@@ -31,6 +31,14 @@ echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main |
 sudo apt-get update
 sudo apt-get install trivy -y
 
+#INSTALLING KUBECTL
+#Now, we have to deploy our application using Kubernetes.
+#To do that, we need to install kubectl on the Jenkins server.
+sudo apt update
+sudo apt install curl
+curl -LO https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+kubectl version --client
 
 
 

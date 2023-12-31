@@ -237,3 +237,42 @@ As you can see Our Pipeline is successful.
 Now, validate whether the docker image has been pushed to DockerHub or not.
 Log in to your Dockerhub account.
 As you can see in the below screenshot, Our Docker image is present on Docker Hub.
+
+
+################################ KUBERNETES PLUGINS #####################################
+go to Dashboard - Manage Jenkins - Plugins
+
+Kubernetes
+Kubernetes Credentials
+Kubernetes Client API
+Kubernetes CLI
+Kubernetes Credential Provider
+
+
+##################### KUBERNETES KEY TO INTERACT WITH MASTER NODE ######################################
+Now, add the Secret file in Jenkins Credentials.
+Select the Secret file and provide the Secret file that you have saved earlier enter the ID k8s then click on Create.
+KIND : secret file
+scope : Global
+file : secret.txt
+id : k8s
+
+
+Now, Add the deploy to the Kubernetes stage in your Jenkins pipeline.
+
+stage('Deploy to Kubernetes'){
+            steps{
+                script{
+                    dir('Kubernetes') {
+                        withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'k8s', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
+                                sh 'kubectl apply -f deployment.yml'
+                                sh 'kubectl apply -f service.yml'
+                                sh 'kubectl get svc'
+                                sh 'kubectl get all'
+                        }   
+                    }
+                }
+            }
+        }
+
+Click on Build Now

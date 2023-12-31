@@ -180,3 +180,25 @@ curl -X POST http://localhost:9090/-/reload
 #Provide the 9964 to Load the dashboard.and click on load
 #Select the default Prometheus from the drop-down menu and click on Import.
 #You will see your Jenkins Monitoring dashboard
+
+
+
+###################################### monitor both Kubernetes Servers #########################
+#Now, we have to add a node exporter to our Prometheus target section. 
+#So, we will be able to monitor both Kubernetes Servers.
+sudo vim /etc/prometheus/prometheus.yml
+
+#Add both job names(Master & Worker nodes) with their respective public.
+  - job_name: "node_exporter_masterk8s"
+    static_configs:
+      - targets: ["<masternode-ip>:9100"]
+
+  - job_name: "node_exporter_workerk8s"
+    static_configs:
+      - targets: ["<workernode-ip>:9100"]
+
+#validate the changes that you have made using promtool.
+promtool check config /etc/prometheus/prometheus.yml
+
+#If your changes have been validated then, push the changes to the Prometheus server.
+curl -X POST http://localhost:9090/-/reload
