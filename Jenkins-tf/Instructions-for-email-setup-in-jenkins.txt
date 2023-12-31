@@ -1,0 +1,42 @@
+Now, we have to integrate Email Alert. So, if our Jenkins pipeline will succeed or fail we will get a notification alert on our email.
+To do that, we need to install the Jenkins Plugin, whose name is Email Extension Template.
+
+1. install Email Extension Template plugin:
+Manage Jenkins -> Plugins and install the Email Extension Template plugin
+
+
+
+2. After installing the plugin, go to your email ID and click on Manage account and you will see what looks like the below snippet.
+a. go to manage google account
+b. go to security
+c. search for app passwords
+d. enter the passwords
+e. provide the name of your app where you are integrating email service.( Name : Jenkins)
+f. You will get your password below. Copy the password and keep it secure somewhere.
+
+
+
+3. Add your email ID and the password that you have generated i jenkins credientals
+a. Go to Manage Jenkins -> Credentials.
+b. Click on (global).
+c. Click on Add credentials
+d. Select the Username with password in Kind.
+e. Provide your mail ID and generated password then provide the ID as mail to call both credentials.
+
+
+
+4. Now, we have to configure our mail for the alerts.
+a. Go to Jenkins -> Manage Jenkins -> System
+b. Search for Extend E-mail Notification.
+c. Provide the smtp.gmail.com in the SMTP server and 465 in the SMTP port.
+d. select credientals from drop down
+e. select ssl
+f. select default content type as HTML.
+
+
+
+5. Then, On the same page Search for Extend E-mail Notification.
+Provide the smtp.gmail.com in the SMTP server and 465 in the SMTP port.
+Select Use SMTP Authentication and provide the Gmail ID and its password in the Username and password.
+select ssl
+To validate whether Jenkins can send the emails to you or not, check the Test configuration by sending a test e-mail.

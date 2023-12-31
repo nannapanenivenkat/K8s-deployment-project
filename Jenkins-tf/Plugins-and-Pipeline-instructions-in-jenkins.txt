@@ -1,0 +1,239 @@
+############################################ INSTALL PLUGINS IN JENKINS ############################################
+#Now, we will set up our Jenkins Pipeline. But there are some plugins required to work with them.
+#Download the following plugins
+
+#1. Eclipse Temurin installer
+#2. SonarQube Scanner
+#3. NodeJS
+
+
+######################################### Now configure the plugins #######################################
+
+#Go to Manage Jenkins -> Tools
+#Click on Add JDK and provide the following things below
+#name: jdk
+#install automatically
+#install from adoptium
+#version : jdk 21+35
+
+#Click on Add NodeJS and provide the following things below
+#name: nodejs
+#install automatically
+#install from nodejs.org
+#version : 21.5
+
+
+
+#Now, we will configure Sonarqube :
+#To access the sonarqube, copy the (http://<Jenkins Server public IP>:9000)
+#1. click Security and click on Users.
+#2. generate the token
+#3. provide the name of your token and click on Generate.( Name: jenkins)
+#4. Copy the generated token and keep it somewhere.
+
+#Now, add the token to your Jenkins credentials :
+#1. Go to Manage Jenkins -> Credentials.
+#Kind : secret text
+#Scope : Global
+#secret : <enter the token >
+#id : sonar-token
+#discription : sonar-token
+
+
+#Go to Manage Jenkins -> System
+#Click on Add Sonarqube
+#Name : sonar
+#Server URL : http://jenkins public ip:9000
+#Token : select the sonar-token in drop down
+
+
+#Go to Manage Jenkins -> Tools
+#Find Sonarqube Scanner and click on Add
+#name : sonar-server
+#install automatically  
+#Install from Maven repository
+#version : sonarqube scanner 5.0.1
+
+
+#To create a webhook, 
+#click on Configuration and select Webhooks.
+#Click on Create.
+#name : jenkins
+#URL : http://<Your_Public_IP>:8080/sonarqube-webhook
+
+
+
+
+##################################################### JENKINS PIPELINE #############################################
+Now, we will create the Jenkins Pipeline
+Click on Create item.
+Provide the name of your Jenkins Pipeline and select Pipeline.
+
+///Currently, we are just creating a pipeline for 
+Sonarqube analysis of the code, 
+quality gate for Sonarqube, 
+and installing the dependencies.
+In the post-build, we have added email alerts for the success or failure of the pipeline.///
+
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk'
+        nodejs 'nodejs'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar-server'
+    }
+    stages {
+        stage('Workspace Cleaning'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'master', url: 'https://github.com/AmanPathak-DevOps/Netflix-Clone-K8S-End-to-End-Project.git'
+            }
+        }
+        stage("Sonarqube Analysis"){
+            steps{
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=Netflix \
+                    -Dsonar.projectKey=Netflix \
+                    '''
+                }
+            }
+        }
+        stage("Quality Gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            } 
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh "npm install"
+            }
+        }  
+    }
+    post {
+     always {
+        emailext attachLog: true,
+            subject: "'${currentBuild.result}'",
+            body: "Project: ${env.JOB_NAME}<br/>" +
+                "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                "URL: ${env.BUILD_URL}<br/>",
+            to: 'venkatcivil108@gmail.com',
+            attachmentsPattern: 'trivyfs.txt,trivyimage.txt'
+        }
+    }
+}
+
+
+
+#install OWASP plugin
+Now, we have to add one more tool for our application named OWASP Dependency-check.
+Go to Manage Jenkins -> Plugins
+Search for OWASP Dependency-Check and install it.
+
+#configure the OWASP.
+Go to Manage Jenkins -> Tools
+name : owasp-dp-check
+install automatically
+install from github.com
+version : 9.0.7
+
+#Now, add the OWASP dependency check stage in the Jenkins pipeline and click on Save.
+
+stage('OWASP DP SCAN') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'owasp-dp-check'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+            }
+        }
+stage('TRIVY FS SCAN') {
+            steps {
+                sh "trivy fs . > trivyfs.txt"
+            }
+        }
+
+
+#configure DOCKER
+Now, we have to build our Docker Image and push it to DockerHub
+To do that, we need to configure the following things.
+
+Add Docker Credentials to your Jenkins
+Go to Manage Jenkins -> Credentials
+Kind : username and password
+username : venkatnannapaneni
+password : 
+id : docker
+description : docker
+
+
+#Install the following Docker plugins on your Jenkins
+Docker
+Docker Commons
+Docker Pipeline
+Docker API
+docker-build-step
+
+Configure the DOCKER tool in Jenkins
+Go to Manage Jenkins -> Tools and provide the below details.
+Name : docker
+install automatically
+install from docker.com
+version: latest
+
+################################################ TMDB API ###################################################
+#Our application is Netflix Clone. So we need some movie databases on our application.
+TMDB is one of them
+Go to this link https://www.themoviedb.org/
+Click on Join TMDB
+Enter the details and click on SignUp
+Once you sign up, you will get a confirmation email on your account. Confirm it.
+Log in to your TMDB account and go to the settings.
+Go to the API section.
+Click on Create to generate API
+Select Developer.
+Provide the basic details and click on Submit.
+After clicking on Submit. You will get your API. Copy the API and keep it somewhere.
+Now, we have to configure our Docker images where we will build our image with the help of new code and then, push it to DockerHub.
+After pushing the image, we will scan our DockerHub Image to find the vulnerabilities in the image.
+Make sure to replace the API with your API and if you are pushing Dockerfile on your Dockerhub account then, replace my username of the Dockerhub with yours.
+
+
+        stage("Docker Image Build"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                       sh "docker system prune -f"
+                       sh "docker container prune -f"
+                       sh "docker build --build-arg TMDB_V3_API_KEY=877a1aee64bc6130058d61c7a01d6cca -t netflix ."
+                    }
+                }
+            }
+        }
+        stage("Docker Image Pushing"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker', toolName: 'docker'){   
+                       sh "docker tag netflix venkatnannapaneni/netflix:latest "
+                       sh "docker push venkatnannapaneni/netflix:latest "
+                    }
+                }
+            }
+        }
+        stage("TRIVY Image Scan"){
+            steps{
+                sh "trivy image venkatnannapaneni/netflix:latest > trivyimage.txt" 
+            }
+        }
+
+Click on Build.
+
+As you can see Our Pipeline is successful.
+Now, validate whether the docker image has been pushed to DockerHub or not.
+Log in to your Dockerhub account.
+As you can see in the below screenshot, Our Docker image is present on Docker Hub.
