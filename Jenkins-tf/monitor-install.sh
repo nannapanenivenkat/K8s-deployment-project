@@ -161,7 +161,7 @@ sudo vim /etc/prometheus/prometheus.yml
 #Copy the content in the file
 - job_name: "jenkins"
     static_configs:
-      - targets: ["<jenkins-server-public-ip>:8080"]
+      - targets: ["${aws_instance.jenkins_server.public_ip}:8080"]
 
 #Once you add the Jenkins job, validate the Prometheus config file whether it is correct or not by running the below command.
 promtool check config /etc/prometheus/prometheus.yml

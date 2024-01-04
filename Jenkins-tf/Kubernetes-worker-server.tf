@@ -4,7 +4,6 @@ resource "aws_instance" "kubernetes_worker_server" {
   key_name               = "mynewkey"
   vpc_security_group_ids = [aws_default_security_group.default_sg.id]
   subnet_id = aws_subnet.main.id
-  user_data              = templatefile("./worker-node.sh", {})
 
   tags = {
     Name = "Kubernetes-worker-server"
