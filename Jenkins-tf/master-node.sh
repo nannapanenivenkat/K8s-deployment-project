@@ -93,7 +93,7 @@ Type=simple
 Restart=on-failure
 RestartSec=5s
 ExecStart=/usr/local/bin/node_exporter \
- - collector.logind
+ --collector.logind
 [Install]
 WantedBy=multi-user.target
 
