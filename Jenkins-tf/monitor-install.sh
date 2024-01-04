@@ -1,9 +1,9 @@
 #!/bin/bash
 #Create Prometheus user
 sudo useradd \
- - system \
- - no-create-home \
- - shell /bin/false prometheus
+ --system \
+ --no-create-home \
+ --shell /bin/false prometheus
 #Download the Prometheus file
 wget https://github.com/prometheus/prometheus/releases/download/v2.49.0-rc.1/prometheus-2.49.0-rc.1.linux-amd64.tar.gz
 #Untar the Prometheus downloaded package
@@ -12,7 +12,6 @@ tar -xvf prometheus-2.49.0-rc.1.linux-amd64.tar.gz
 sudo mkdir -p /data /etc/prometheus
 #Now, enter into the prometheus package file that you have untar in the earlier step.
 cd prometheus-2.49.0-rc.1.linux-amd64/
-ls
 #Move the prometheus and promtool files package in /usr/local/bin
 sudo mv prometheus promtool /usr/local/bin/
 #Move the console and console_libraries and prometheus.yml in the /etc/prometheus
@@ -24,8 +23,9 @@ prometheus --version
 
 #Create a systemd configuration file for prometheus
 #Edit the file /etc/systemd/system/prometheus.service
-sudo vim /etc/systemd/system/prometheus.service
 #paste the below configurations in your prometheus.service configuration file and save it
+sudo tee /etc/systemd/system/prometheus.service > /dev/null <<EOF
+
 [Unit]
 Description=Prometheus
 Wants=network-online.target
@@ -39,14 +39,16 @@ Type=simple
 Restart=on-failure
 RestartSec=5s
 ExecStart=/usr/local/bin/prometheus \
- - config.file=/etc/prometheus/prometheus.yml \
- - storage.tsdb.path=/data \
- - web.console.templates=/etc/prometheus/consoles \
- - web.console.libraries=/etc/prometheus/console_libraries \
- - web.listen-address=0.0.0.0:9090 \
- - web.enable-lifecycle
+ --config.file=/etc/prometheus/prometheus.yml \
+ --storage.tsdb.path=/data \
+ --web.console.templates=/etc/prometheus/consoles \
+ --web.console.libraries=/etc/prometheus/console_libraries \
+ --web.listen-address=0.0.0.0:9090 \
+ --web.enable-lifecycle
 [Install]
 WantedBy=multi-user.target
+EOF
+
 
 #Once you write the systemd configuration file for Prometheus, then enable it and start the Prometheus service.
 sudo systemctl enable prometheus.service
@@ -61,9 +63,9 @@ systemctl status prometheus.service
 #Now, we have to install a node exporter to visualize the machine or hardware level data such as CPU, RAM, etc on our Grafana dashboard.
 #To do that, we have to create a user for it.
 sudo useradd \
- - system \
- - no-create-home \
- - shell /bin/false node_exporter
+ --system \
+ --no-create-home \
+ --shell /bin/false node_exporter
 #Download the node exporter package
 wget https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
 #Untar the node exporter package file and move the node_exporter directory to the /usr/local/bin directory
@@ -89,7 +91,7 @@ Type=simple
 Restart=on-failure
 RestartSec=5s
 ExecStart=/usr/local/bin/node_exporter \
- - collector.logind
+ --collector.logind
 [Install]
 WantedBy=multi-user.target
 
