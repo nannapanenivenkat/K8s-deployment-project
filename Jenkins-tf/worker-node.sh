@@ -63,8 +63,9 @@ tar -xvf node_exporter-1.7.0.linux-amd64.tar.gz
 sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
 
 #Create the systemd configuration file for node exporter.
-sudo vim /etc/systemd/system/node_exporter.service
 #Copy the below configurations and paste them into the /etc/systemd/system/node_exporter.service file.
+sudo vim /etc/systemd/system/node_exporter.service <<EOF
+
 [Unit]
 Description=Node Exporter
 Wants=network-online.target
@@ -81,6 +82,7 @@ ExecStart=/usr/local/bin/node_exporter \
  --collector.logind
 [Install]
 WantedBy=multi-user.target
+EOF
 
 #Enable the node exporter systemd configuration file and start it.
 sudo systemctl enable node_exporter

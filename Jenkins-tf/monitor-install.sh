@@ -77,29 +77,29 @@ node_exporter --version
 #Create the systemd configuration file for node exporter.
 #Edit the file
 #Copy the below configurations and paste them into the /etc/systemd/system/node_exporter.service file.
-sudo vim /etc/systemd/system/node_exporter.service > /dev/null <<EOF
-
+sudo vim /etc/systemd/system/node_exporter.service <<EOF
 [Unit]
 Description=Node Exporter
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=500
 StartLimitBurst=5
+
 [Service]
 User=node_exporter
 Group=node_exporter
 Type=simple
 Restart=on-failure
 RestartSec=5s
-ExecStart=/usr/local/bin/node_exporter \
- --collector.logind
+ExecStart=/usr/local/bin/node_exporter --collector.logind
+
 [Install]
 WantedBy=multi-user.target
 EOF
 
 #Enable the node exporter systemd configuration file and start it.
 sudo systemctl enable node_exporter
-sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
 systemctl status node_exporter.service
 
 
@@ -108,12 +108,12 @@ systemctl status node_exporter.service
 ######################################### Add Node Exporter to Prometheus target section ###########################
 #Now, we have to add a node exporter to our Prometheus target section. So, we will be able to monitor our server.
 #edit the file
-sudo vim /etc/prometheus/prometheus.yml
 #Copy the content in the file
+sudo vim /etc/prometheus/prometheus.yml <<EOF
   - job_name: "node_exporter"
     static_configs:
       - targets: ["localhost:9100"]
-
+EOF
 #After saving the file, validate the changes that you have made using promtool.
 promtool check config /etc/prometheus/prometheus.yml
 #If your changes have been validated then, push the changes to the Prometheus server.
@@ -161,11 +161,12 @@ sudo systemctl status grafana-server.service
 #Go to Manage Jenkins -> Plugin search for Prometheus metrics install it and restart your Jenkins.
 
 #Edit the /etc/prometheus/prometheus.yml file
-sudo vim /etc/prometheus/prometheus.yml
 #Copy the content in the file
+sudo vim /etc/prometheus/prometheus.yml <<EOF
 - job_name: "jenkins"
     static_configs:
       - targets: ["${aws_instance.jenkins_server.public_ip}:8080"]
+EOF
 
 #Once you add the Jenkins job, validate the Prometheus config file whether it is correct or not by running the below command.
 promtool check config /etc/prometheus/prometheus.yml
@@ -190,16 +191,16 @@ curl -X POST http://localhost:9090/-/reload
 ###################################### monitor both Kubernetes Servers #########################
 #Now, we have to add a node exporter to our Prometheus target section. 
 #So, we will be able to monitor both Kubernetes Servers.
-sudo vim /etc/prometheus/prometheus.yml
-
 #Add both job names(Master & Worker nodes) with their respective public.
+sudo vim /etc/prometheus/prometheus.yml <<EOF
   - job_name: "node_exporter_masterk8s"
     static_configs:
-      - targets: ["<masternode-ip>:9100"]
+      - targets: ["${aws_instance.kubernetes_master_server.public_ip}:9100"]
 
   - job_name: "node_exporter_workerk8s"
     static_configs:
-      - targets: ["<workernode-ip>:9100"]
+      - targets: ["${aws_instance.kubernetes_worker_server.public_ip}:9100"]
+EOF
 
 #validate the changes that you have made using promtool.
 promtool check config /etc/prometheus/prometheus.yml

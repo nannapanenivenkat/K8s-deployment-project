@@ -10,3 +10,7 @@ resource "aws_instance" "kubernetes_master_server" {
   }
 
 }
+
+output "kubernetes_master_server_public_ip" {
+  value = aws_instance.kubernetes_master_server.public_ip
+}

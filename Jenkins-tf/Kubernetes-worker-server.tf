@@ -10,3 +10,7 @@ resource "aws_instance" "kubernetes_worker_server" {
   }
 
 }
+
+output "kubernetes_worker_server_public_ip" {
+  value = aws_instance.kubernetes_worker_server.public_ip
+}
