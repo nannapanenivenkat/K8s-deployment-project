@@ -1,24 +1,17 @@
 #!/bin/bash
-#Create Prometheus user
+
 sudo useradd \
  --system \
  --no-create-home \
  --shell /bin/false prometheus
 #Download the Prometheus file
 wget https://github.com/prometheus/prometheus/releases/download/v2.49.0-rc.1/prometheus-2.49.0-rc.1.linux-amd64.tar.gz
-#Untar the Prometheus downloaded package
 tar -xvf prometheus-2.49.0-rc.1.linux-amd64.tar.gz
-#Create two directories /data and /etc/prometheus to configure the Prometheus
 sudo mkdir -p /data /etc/prometheus
-#Now, enter into the prometheus package file that you have untar in the earlier step.
 cd prometheus-2.49.0-rc.1.linux-amd64/
-#Move the prometheus and promtool files package in /usr/local/bin
 sudo mv prometheus promtool /usr/local/bin/
-#Move the console and console_libraries and prometheus.yml in the /etc/prometheus
 sudo mv consoles console_libraries/ prometheus.yml /etc/prometheus/
-#Provide the permissions to prometheus user
 sudo chown -R prometheus:prometheus /etc/prometheus/ /data/
-#Check and validate the Prometheus
 prometheus --version
 
 #Create a systemd configuration file for prometheus
@@ -68,23 +61,20 @@ sudo useradd \
  --shell /bin/false node_exporter
 #Download the node exporter package
 wget https://github.com/prometheus/node_exporter/releases/download/v1.7.0/node_exporter-1.7.0.linux-amd64.tar.gz
-#Untar the node exporter package file and move the node_exporter directory to the /usr/local/bin directory
 tar -xvf node_exporter-1.7.0.linux-amd64.tar.gz
 sudo mv node_exporter-1.7.0.linux-amd64/node_exporter /usr/local/bin/
-#Validate the version of the node exporter
 node_exporter --version
 
 #Create the systemd configuration file for node exporter.
 #Edit the file
 #Copy the below configurations and paste them into the /etc/systemd/system/node_exporter.service file.
-sudo vim /etc/systemd/system/node_exporter.service <<EOF
+sudo tee /etc/systemd/system/node_exporter.service > /dev/null <<EOF
 [Unit]
 Description=Node Exporter
 Wants=network-online.target
 After=network-online.target
 StartLimitIntervalSec=500
 StartLimitBurst=5
-
 [Service]
 User=node_exporter
 Group=node_exporter
@@ -92,7 +82,6 @@ Type=simple
 Restart=on-failure
 RestartSec=5s
 ExecStart=/usr/local/bin/node_exporter --collector.logind
-
 [Install]
 WantedBy=multi-user.target
 EOF
@@ -109,14 +98,13 @@ systemctl status node_exporter.service
 #Now, we have to add a node exporter to our Prometheus target section. So, we will be able to monitor our server.
 #edit the file
 #Copy the content in the file
-sudo vim /etc/prometheus/prometheus.yml <<EOF
+sudo tee /etc/prometheus/prometheus.yml > /dev/null <<EOF
   - job_name: "node_exporter"
     static_configs:
       - targets: ["localhost:9100"]
 EOF
 #After saving the file, validate the changes that you have made using promtool.
 promtool check config /etc/prometheus/prometheus.yml
-#If your changes have been validated then, push the changes to the Prometheus server.
 curl -X POST http://localhost:9090/-/reload
 
 
@@ -127,12 +115,12 @@ curl -X POST http://localhost:9090/-/reload
 #Now, install the Grafana tool to visualize all the data that is coming with the help of Prometheus.
 sudo apt-get install -y apt-transport-https software-properties-common wget
 sudo mkdir -p /etc/apt/keyrings/
-wget -q -O - https://apt.grafana.com/gpg.key | gpg - dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null
 echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
 echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
 sudo apt-get update
 #Install the Grafana
-sudo apt-get install grafana
+sudo apt-get install grafana -y
 #Enable and start the Grafana Service
 sudo systemctl enable grafana-server.service
 sudo systemctl start grafana-server.service
@@ -164,6 +152,7 @@ sudo systemctl status grafana-server.service
 #Copy the content in the file
 sudo vim /etc/prometheus/prometheus.yml <<EOF
 - job_name: "jenkins"
+  metrics_path: '/prometheus'
     static_configs:
       - targets: ["${aws_instance.jenkins_server.public_ip}:8080"]
 EOF
@@ -192,7 +181,7 @@ curl -X POST http://localhost:9090/-/reload
 #Now, we have to add a node exporter to our Prometheus target section. 
 #So, we will be able to monitor both Kubernetes Servers.
 #Add both job names(Master & Worker nodes) with their respective public.
-sudo vim /etc/prometheus/prometheus.yml <<EOF
+sudo tee /etc/prometheus/prometheus.yml > /dev/null <<EOF
   - job_name: "node_exporter_masterk8s"
     static_configs:
       - targets: ["${aws_instance.kubernetes_master_server.public_ip}:9100"]
