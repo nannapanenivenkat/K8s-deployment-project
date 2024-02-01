@@ -1,1 +1,1 @@
-# Netflix-K8s-deployment-project
+# K8s-deployment-project
